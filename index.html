@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>LER – Rassismus Analyse</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --blue: #2E74B5;
+      --blue-light: #5a9fd4;
+      --blue-glow: rgba(46, 116, 181, 0.3);
+      --bg: #0e1117;
+      --bg2: #161b25;
+      --card: #1e2535;
+      --text: #e8eaf0;
+      --muted: #8892a4;
+      --radius: 16px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg);
+    }
+
+    body {
+      font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: linear-gradient(to bottom, rgba(14,17,23,0.95) 0%, transparent 100%);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+    }
+
+    .nav-btn {
+      padding: 8px 22px;
+      border-radius: 30px;
+      border: 1.5px solid rgba(46,116,181,0.4);
+      background: rgba(46,116,181,0.1);
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      -webkit-transition: all 0.3s ease;
+      transition: all 0.3s ease;
+    }
+
+    .nav-btn.active,
+    .nav-btn:hover {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: white;
+      box-shadow: 0 0 20px var(--blue-glow);
+    }
+
+    /* ── PAGES ── */
+    .page {
+      min-height: 100vh;
+      padding: 100px 24px 60px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .page-divider {
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(to right, transparent, var(--blue), transparent);
+      margin: 0;
+      opacity: 0.4;
+    }
+
+    /* ── HEADER ── */
+    .page-header {
+      margin-bottom: 36px;
+      opacity: 0;
+      -webkit-transform: translateY(30px);
+      transform: translateY(30px);
+      -webkit-transition: opacity 0.6s ease, -webkit-transform 0.6s ease;
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .page-header.visible {
+      opacity: 1;
+      -webkit-transform: translateY(0);
+      transform: translateY(0);
+    }
+
+    .page-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--blue-light);
+      margin-bottom: 8px;
+    }
+
+    .page-title {
+      font-size: 42px;
+      font-weight: 800;
+      color: var(--blue);
+      line-height: 1.1;
+      text-shadow: 0 0 40px var(--blue-glow);
+    }
+
+    .page-subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 20px;
+      overflow: hidden;
+      opacity: 0;
+      -webkit-transform: translateX(-40px);
+      transform: translateX(-40px);
+      -webkit-transition: opacity 0.55s ease, -webkit-transform 0.55s ease, box-shadow 0.3s ease;
+      transition: opacity 0.55s ease, transform 0.55s ease, box-shadow 0.3s ease;
+    }
+
+    .card:nth-child(even) {
+      -webkit-transform: translateX(40px);
+      transform: translateX(40px);
+    }
+
+    .card.visible {
+      opacity: 1;
+      -webkit-transform: translateX(0);
+      transform: translateX(0);
+    }
+
+    .card:hover {
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(46,116,181,0.3);
+    }
+
+    .card-question {
+      padding: 18px 20px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .q-badge {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), #1a4a7a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: white;
+      margin-top: 1px;
+      box-shadow: 0 0 12px var(--blue-glow);
+    }
+
+    .q-text {
+      flex: 1;
+    }
+
+    .q-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--blue-light);
+      margin-bottom: 4px;
+    }
+
+    .q-content {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .card-answer {
+      padding: 16px 20px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: rgba(46,116,181,0.04);
+    }
+
+    .a-icon {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+      color: var(--blue-light);
+      font-size: 16px;
+    }
+
+    .a-text {
+      flex: 1;
+    }
+
+    .a-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .a-content {
+      font-size: 15px;
+      color: #c8d0de;
+      line-height: 1.65;
+    }
+
+    /* ── SCROLL HINT ── */
+    .scroll-hint {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 32px 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+      opacity: 0;
+      animation: fadeInHint 1s ease 1.5s forwards;
+    }
+
+    .scroll-hint-arrow {
+      width: 30px;
+      height: 30px;
+      border-right: 2px solid var(--blue);
+      border-bottom: 2px solid var(--blue);
+      transform: rotate(45deg);
+      animation: bounce 1.6s ease infinite;
+    }
+
+    @-webkit-keyframes bounce {
+      0%, 100% { -webkit-transform: rotate(45deg) translateY(0); }
+      50% { -webkit-transform: rotate(45deg) translateY(6px); }
+    }
+    @keyframes bounce {
+      0%, 100% { transform: rotate(45deg) translateY(0); }
+      50% { transform: rotate(45deg) translateY(6px); }
+    }
+
+    @keyframes fadeInHint {
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="nav-btn active" href="#text1" id="nav1">Text 1</a>
+    <a class="nav-btn" href="#text2" id="nav2">Text 2</a>
+  </nav>
+
+  <!-- ══ PAGE 1 ══ -->
+  <section class="page" id="text1">
+
+    <div class="page-header" id="header1">
+      <div class="page-label">LER · Rassismus</div>
+      <div class="page-title">Text 1</div>
+      <div class="page-subtitle">Vögel im Käfig · Kipling</div>
+    </div>
+
+    <div class="card" data-delay="0">
+      <div class="card-question">
+        <div class="q-badge">1</div>
+        <div class="q-text">
+          <div class="q-label">Frage</div>
+          <div class="q-content">Warum werden die Vögel erst eingesperrt und dann soll man von ihnen lernen?</div>
+        </div>
+      </div>
+      <div class="card-answer">
+        <div class="a-icon">→</div>
+        <div class="a-text">
+          <div class="a-label">Grund</div>
+          <div class="a-content">Das passt zu Rassismus, weil man Gruppen zuerst unterdrückt (Käfig) und sie dann als „besonders" oder „exotisch" darstellt, um sich selbst besser zu fühlen. Das zeigt, wie Unterdrückung und Bewunderung gleichzeitig passieren können – und das ist im Grunde sehr egoistisch.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-delay="100">
+      <div class="card-question">
+        <div class="q-badge">2</div>
+        <div class="q-text">
+          <div class="q-label">Frage</div>
+          <div class="q-content">Ist es ok zu sagen, man weiß wie ein Vogel ist, nur weil man mit ihnen spielt?</div>
+        </div>
+      </div>
+      <div class="card-answer">
+        <div class="a-icon">→</div>
+        <div class="a-text">
+          <div class="a-label">Grund</div>
+          <div class="a-content">Oft denken Menschen, sie verstehen eine andere Kultur oder Gruppe vollständig, obwohl sie deren echte Probleme nie wirklich kennengelernt haben. Das ist wie bei Rassismus: Man bildet sich Vorurteile, ohne jemals wirklich mit diesen Menschen zu tun gehabt zu haben.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-delay="200">
+      <div class="card-question">
+        <div class="q-badge">3</div>
+        <div class="q-text">
+          <div class="q-label">Frage</div>
+          <div class="q-content">Warum ist es „verrückt", dass Singen und Tanzen so viel Macht hat?</div>
+        </div>
+      </div>
+      <div class="card-answer">
+        <div class="a-icon">→</div>
+        <div class="a-text">
+          <div class="a-label">Grund</div>
+          <div class="a-content">Das erinnert an Vorurteile, bei denen man bestimmten Gruppen nur Talent für Musik oder Sport zuschreibt, statt sie als genauso klug oder fähig anzusehen. Das sind keine Fakten – das sind Vorurteile, die Menschen auf bestimmte Eigenschaften reduzieren.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scroll-hint">
+      <span>weiter scrollen</span>
+      <div class="scroll-hint-arrow"></div>
+    </div>
+
+  </section>
+
+  <div class="page-divider"></div>
+
+  <!-- ══ PAGE 2 ══ -->
+  <section class="page" id="text2">
+
+    <div class="page-header" id="header2">
+      <div class="page-label">LER · Rassismus</div>
+      <div class="page-title">Text 2</div>
+      <div class="page-subtitle">Mowgli · Das Dschungelbuch</div>
+    </div>
+
+    <div class="card" data-delay="0">
+      <div class="card-question">
+        <div class="q-badge">1</div>
+        <div class="q-text">
+          <div class="q-label">Frage</div>
+          <div class="q-content">Warum muss Mowgli extra „Meisterworte" lernen, um im Dschungel sicher zu sein?</div>
+        </div>
+      </div>
+      <div class="card-answer">
+        <div class="a-icon">→</div>
+        <div class="a-text">
+          <div class="a-label">Grund</div>
+          <div class="a-content">Das ist vergleichbar mit Rassismus, wenn unterdrückte Gruppen sich anpassen und fremde Regeln lernen müssen, nur damit sie nicht angegriffen oder verachtet werden.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-delay="100">
+      <div class="card-question">
+        <div class="q-badge">2</div>
+        <div class="q-text">
+          <div class="q-label">Frage</div>
+          <div class="q-content">Ist es rassistisch, dass Baloo sagt, Mowgli ist kein „Baumstumpf" zum Krallenschärfen?</div>
+        </div>
+      </div>
+      <div class="card-answer">
+        <div class="a-icon">→</div>
+        <div class="a-text">
+          <div class="a-label">Grund</div>
+          <div class="a-content">Hier wird Mowgli nur über seinen Körper definiert – fast wie ein Objekt oder ein Sklave. Er wird nicht als gleichwertiges Wesen behandelt, sondern nur nach seinem Nutzen bewertet.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-delay="200">
+      <div class="card-question">
+        <div class="q-badge">3</div>
+        <div class="q-text">
+          <div class="q-label">Frage</div>
+          <div class="q-content">Warum sagt Baloo, dass die Schüler ihm nie danken?</div>
+        </div>
+      </div>
+      <div class="card-answer">
+        <div class="a-icon">→</div>
+        <div class="a-text">
+          <div class="a-label">Grund</div>
+          <div class="a-content">Das bedient das Vorurteil, dass die „überlegene" Gruppe glaubt, sie tue den anderen etwas Gutes – zum Beispiel durch Bildung. Dabei wirkt es dann so, als wären die anderen undankbar, obwohl das System von Anfang an ungerecht ist.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-delay="300">
+      <div class="card-question">
+        <div class="q-badge">4</div>
+        <div class="q-text">
+          <div class="q-label">Frage</div>
+          <div class="q-content">Warum muss Mowgli den „Akzent des Bären" nutzen, um dazuzugehören?</div>
+        </div>
+      </div>
+      <div class="card-answer">
+        <div class="a-icon">→</div>
+        <div class="a-text">
+          <div class="a-label">Grund</div>
+          <div class="a-content">Das zeigt, dass man nur akzeptiert wird, wenn man die Identität der Mehrheit übernimmt und die eigene Herkunft versteckt. Das ist ähnlich wie bei Sprache und Kultur: Alles, was fremd ist, wird abgelehnt.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-delay="400">
+      <div class="card-question">
+        <div class="q-badge">5</div>
+        <div class="q-text">
+          <div class="q-label">Frage</div>
+          <div class="q-content">Warum ist Schutz im Dschungel von „Meisterworten" abhängig?</div>
+        </div>
+      </div>
+      <div class="card-answer">
+        <div class="a-icon">→</div>
+        <div class="a-text">
+          <div class="a-label">Grund</div>
+          <div class="a-content">Das System ist unfair. Wer die Regeln der Herrschenden nicht kennt, hat keinen Anspruch auf Schutz – das ist eine rassistische Machtstruktur, die Außenseiter bewusst benachteiligt.</div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <script>
+    // ── Intersection Observer for card animations ──
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          var el = entry.target;
+          var delay = el.getAttribute('data-delay') || 0;
+          setTimeout(function() {
+            el.classList.add('visible');
+          }, parseInt(delay));
+          observer.unobserve(el);
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.card, .page-header').forEach(function(el) {
+      observer.observe(el);
+    });
+
+    // ── Nav active state ──
+    var sections = [
+      document.getElementById('text1'),
+      document.getElementById('text2')
+    ];
+    var navBtns = [
+      document.getElementById('nav1'),
+      document.getElementById('nav2')
+    ];
+
+    var navObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
+          var id = entry.target.id;
+          navBtns.forEach(function(btn) { btn.classList.remove('active'); });
+          if (id === 'text1') navBtns[0].classList.add('active');
+          if (id === 'text2') navBtns[1].classList.add('active');
+        }
+      });
+    }, { threshold: 0.3 });
+
+    sections.forEach(function(s) { navObserver.observe(s); });
+  </script>
+
+</body>
+</html>
