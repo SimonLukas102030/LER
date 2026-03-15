@@ -3,492 +3,346 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>LER – Rassismus Analyse</title>
+  <title>LER – Rassismus</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    *, *::before, *::after {
+      box-sizing: border-box; margin: 0; padding: 0;
       -webkit-tap-highlight-color: transparent;
     }
-
     :root {
-      --blue: #2E74B5;
-      --blue-light: #5a9fd4;
-      --blue-glow: rgba(46, 116, 181, 0.3);
-      --bg: #0e1117;
-      --bg2: #161b25;
-      --card: #1e2535;
-      --text: #e8eaf0;
-      --muted: #8892a4;
-      --radius: 16px;
+      --blue:  #2E74B5;
+      --blue2: #5a9fd4;
+      --glow:  rgba(46,116,181,0.3);
+      --bg:    #080c14;
+      --text:  #e8eaf0;
+      --sub:   #8892a4;
     }
-
-    html {
-      scroll-behavior: smooth;
+    html, body {
+      height: 100%; overflow: hidden;
       background: var(--bg);
-    }
-
-    body {
       font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
       color: var(--text);
-      background: var(--bg);
-      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      user-select: none; -webkit-user-select: none;
     }
 
-    /* ── NAV ── */
-    nav {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      padding: 16px 20px;
-      background: linear-gradient(to bottom, rgba(14,17,23,0.95) 0%, transparent 100%);
-      -webkit-backdrop-filter: blur(12px);
-      backdrop-filter: blur(12px);
+    /* ── subtle bg glow ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 55% 45% at 15% 65%, rgba(46,116,181,0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 45% 35% at 85% 25%, rgba(46,116,181,0.05) 0%, transparent 70%);
     }
 
-    .nav-btn {
-      padding: 8px 22px;
-      border-radius: 30px;
-      border: 1.5px solid rgba(46,116,181,0.4);
-      background: rgba(46,116,181,0.1);
-      color: var(--muted);
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      -webkit-transition: all 0.3s ease;
-      transition: all 0.3s ease;
+    /* ── TOP NAV ── */
+    #nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; justify-content: center; gap: 10px;
+      padding: 16px 20px 20px;
+      background: linear-gradient(to bottom, rgba(8,12,20,0.97) 55%, transparent);
+    }
+    .tab {
+      padding: 9px 30px; border-radius: 26px;
+      border: 1.5px solid rgba(46,116,181,0.25);
+      background: rgba(46,116,181,0.06);
+      color: var(--sub); font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      -webkit-transition: all 0.3s; transition: all 0.3s;
+    }
+    .tab.active {
+      background: var(--blue); border-color: var(--blue);
+      color: #fff; box-shadow: 0 4px 24px var(--glow);
     }
 
-    .nav-btn.active,
-    .nav-btn:hover {
-      background: var(--blue);
-      border-color: var(--blue);
-      color: white;
-      box-shadow: 0 0 20px var(--blue-glow);
+    /* ── VIEWPORT ── */
+    #vp { position: fixed; inset: 0; overflow: hidden; }
+
+    /* ── SLIDES ── */
+    .slide {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      padding: 76px 22px 88px;
+      -webkit-transition: -webkit-transform 0.52s cubic-bezier(0.4,0,0.2,1), opacity 0.52s ease;
+              transition:         transform 0.52s cubic-bezier(0.4,0,0.2,1), opacity 0.52s ease;
+    }
+    .slide.above  { -webkit-transform: translateY(-105%); transform: translateY(-105%); opacity: 0; }
+    .slide.active { -webkit-transform: translateY(0);     transform: translateY(0);     opacity: 1; }
+    .slide.below  { -webkit-transform: translateY(105%);  transform: translateY(105%);  opacity: 0; }
+    .slide.instant { -webkit-transition: none !important; transition: none !important; }
+
+    /* ── PANEL ── */
+    .panel {
+      position: relative; overflow: hidden;
+      width: 100%; max-width: 650px;
+      background: rgba(14,21,38,0.88);
+      border: 1px solid rgba(46,116,181,0.14);
+      border-radius: 26px; padding: 36px 32px 32px;
+      -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+      box-shadow: 0 28px 72px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
     }
 
-    /* ── PAGES ── */
-    .page {
-      min-height: 100vh;
-      padding: 100px 24px 60px;
-      max-width: 760px;
-      margin: 0 auto;
+    /* big number watermark */
+    .panel::before {
+      content: attr(data-num);
+      position: absolute; top: -14px; right: 18px;
+      font-size: 110px; font-weight: 900; line-height: 1;
+      letter-spacing: -6px; color: rgba(46,116,181,0.08);
+      pointer-events: none;
     }
 
-    .page-divider {
-      width: 100%;
-      height: 2px;
-      background: linear-gradient(to right, transparent, var(--blue), transparent);
-      margin: 0;
-      opacity: 0.4;
+    /* top accent line */
+    .panel::after {
+      content: '';
+      position: absolute; top: 0; left: 32px; right: 32px; height: 2px;
+      background: linear-gradient(to right, var(--blue), rgba(46,116,181,0.15));
+      border-radius: 0 0 2px 2px;
     }
 
-    /* ── HEADER ── */
-    .page-header {
-      margin-bottom: 36px;
-      opacity: 0;
-      -webkit-transform: translateY(30px);
-      transform: translateY(30px);
-      -webkit-transition: opacity 0.6s ease, -webkit-transform 0.6s ease;
-      transition: opacity 0.6s ease, transform 0.6s ease;
+    .q-tag {
+      display: inline-flex; align-items: center;
+      padding: 4px 12px; border-radius: 20px; margin-bottom: 16px;
+      background: rgba(46,116,181,0.14); border: 1px solid rgba(46,116,181,0.22);
+      font-size: 11px; font-weight: 700; letter-spacing: 2.5px;
+      text-transform: uppercase; color: var(--blue2);
     }
-
-    .page-header.visible {
-      opacity: 1;
-      -webkit-transform: translateY(0);
-      transform: translateY(0);
-    }
-
-    .page-label {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: var(--blue-light);
-      margin-bottom: 8px;
-    }
-
-    .page-title {
-      font-size: 42px;
-      font-weight: 800;
-      color: var(--blue);
-      line-height: 1.1;
-      text-shadow: 0 0 40px var(--blue-glow);
-    }
-
-    .page-subtitle {
-      font-size: 14px;
-      color: var(--muted);
-      margin-top: 8px;
-    }
-
-    /* ── CARDS ── */
-    .card {
-      background: var(--card);
-      border-radius: var(--radius);
-      border: 1px solid rgba(255,255,255,0.06);
-      margin-bottom: 20px;
-      overflow: hidden;
-      opacity: 0;
-      -webkit-transform: translateX(-40px);
-      transform: translateX(-40px);
-      -webkit-transition: opacity 0.55s ease, -webkit-transform 0.55s ease, box-shadow 0.3s ease;
-      transition: opacity 0.55s ease, transform 0.55s ease, box-shadow 0.3s ease;
-    }
-
-    .card:nth-child(even) {
-      -webkit-transform: translateX(40px);
-      transform: translateX(40px);
-    }
-
-    .card.visible {
-      opacity: 1;
-      -webkit-transform: translateX(0);
-      transform: translateX(0);
-    }
-
-    .card:hover {
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(46,116,181,0.3);
-    }
-
-    .card-question {
-      padding: 18px 20px 14px;
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .q-badge {
-      flex-shrink: 0;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--blue), #1a4a7a);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 800;
-      color: white;
-      margin-top: 1px;
-      box-shadow: 0 0 12px var(--blue-glow);
-    }
-
     .q-text {
-      flex: 1;
+      font-size: clamp(17px, 3.8vw, 22px); font-weight: 700;
+      line-height: 1.45; color: var(--text); margin-bottom: 28px;
     }
-
-    .q-label {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--blue-light);
-      margin-bottom: 4px;
+    .divider {
+      height: 2px; border-radius: 2px; margin-bottom: 22px;
+      background: linear-gradient(to right, var(--blue), rgba(46,116,181,0.08));
     }
-
-    .q-content {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text);
-      line-height: 1.4;
+    .a-tag {
+      font-size: 10px; font-weight: 700; letter-spacing: 2.5px;
+      text-transform: uppercase; color: var(--sub); margin-bottom: 10px;
     }
-
-    .card-answer {
-      padding: 16px 20px;
-      display: flex;
-      gap: 14px;
-      align-items: flex-start;
-      background: rgba(46,116,181,0.04);
-    }
-
-    .a-icon {
-      flex-shrink: 0;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-top: 2px;
-      color: var(--blue-light);
-      font-size: 16px;
-    }
-
     .a-text {
-      flex: 1;
+      font-size: clamp(14px, 3vw, 16px); color: #aab8cc; line-height: 1.78;
     }
 
-    .a-label {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 6px;
+    /* ── BOTTOM BAR ── */
+    #bbar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      padding: 16px 28px 26px;
+      display: flex; justify-content: space-between; align-items: flex-end;
+      background: linear-gradient(to top, rgba(8,12,20,0.92) 55%, transparent);
+      pointer-events: none;
+    }
+    .info-name { font-size: 13px; font-weight: 700; color: rgba(232,234,240,0.55); }
+    .info-meta { font-size: 11px; color: var(--sub); margin-top: 3px; letter-spacing: 0.3px; }
+
+    /* dots */
+    #dots { display: flex; gap: 7px; align-items: center; }
+    .dot {
+      width: 7px; height: 7px; border-radius: 4px;
+      background: rgba(255,255,255,0.16);
+      -webkit-transition: all 0.3s; transition: all 0.3s;
+    }
+    .dot.on {
+      width: 22px; background: var(--blue);
+      box-shadow: 0 0 10px var(--glow);
     }
 
-    .a-content {
-      font-size: 15px;
-      color: #c8d0de;
-      line-height: 1.65;
+    /* ── SWIPE HINT ── */
+    #hint {
+      position: fixed; bottom: 72px; left: 50%;
+      -webkit-transform: translateX(-50%); transform: translateX(-50%);
+      z-index: 99; display: flex; flex-direction: column; align-items: center; gap: 6px;
+      color: var(--sub); font-size: 12px; pointer-events: none;
+      opacity: 0; -webkit-animation: hfade 3.5s ease 1.2s forwards; animation: hfade 3.5s ease 1.2s forwards;
     }
-
-    /* ── SCROLL HINT ── */
-    .scroll-hint {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 32px 0 16px;
-      color: var(--muted);
-      font-size: 13px;
-      opacity: 0;
-      animation: fadeInHint 1s ease 1.5s forwards;
+    .harrow {
+      width: 2px; height: 28px; border-radius: 2px;
+      background: linear-gradient(to bottom, transparent, var(--blue));
+      -webkit-animation: ha 1.5s ease infinite; animation: ha 1.5s ease infinite;
     }
-
-    .scroll-hint-arrow {
-      width: 30px;
-      height: 30px;
-      border-right: 2px solid var(--blue);
-      border-bottom: 2px solid var(--blue);
-      transform: rotate(45deg);
-      animation: bounce 1.6s ease infinite;
-    }
-
-    @-webkit-keyframes bounce {
-      0%, 100% { -webkit-transform: rotate(45deg) translateY(0); }
-      50% { -webkit-transform: rotate(45deg) translateY(6px); }
-    }
-    @keyframes bounce {
-      0%, 100% { transform: rotate(45deg) translateY(0); }
-      50% { transform: rotate(45deg) translateY(6px); }
-    }
-
-    @keyframes fadeInHint {
-      to { opacity: 1; }
-    }
+    @-webkit-keyframes hfade { 0%{opacity:0} 15%{opacity:1} 80%{opacity:1} 100%{opacity:0} }
+    @keyframes         hfade { 0%{opacity:0} 15%{opacity:1} 80%{opacity:1} 100%{opacity:0} }
+    @-webkit-keyframes ha { 0%,100%{-webkit-transform:translateY(0);opacity:.4} 50%{-webkit-transform:translateY(5px);opacity:1} }
+    @keyframes         ha { 0%,100%{transform:translateY(0);opacity:.4}         50%{transform:translateY(5px);opacity:1}         }
   </style>
 </head>
 <body>
 
-  <nav>
-    <a class="nav-btn active" href="#text1" id="nav1">Text 1</a>
-    <a class="nav-btn" href="#text2" id="nav2">Text 2</a>
-  </nav>
+<nav id="nav">
+  <button class="tab active" onclick="switchT(0)">Text 1</button>
+  <button class="tab"        onclick="switchT(1)">Text 2</button>
+</nav>
 
-  <!-- ══ PAGE 1 ══ -->
-  <section class="page" id="text1">
+<div id="vp"></div>
 
-    <div class="page-header" id="header1">
-      <div class="page-label">LER · Rassismus</div>
-      <div class="page-title">Text 1</div>
-      <div class="page-subtitle">Vögel im Käfig · Kipling</div>
-    </div>
+<div id="bbar">
+  <div>
+    <div class="info-name">Simon Köper &middot; Klasse 9/1</div>
+    <div class="info-meta">LER &middot; Herr Fernandez &middot; Gymnasium Berthold Brecht</div>
+  </div>
+  <div id="dots"></div>
+</div>
 
-    <div class="card" data-delay="0">
-      <div class="card-question">
-        <div class="q-badge">1</div>
-        <div class="q-text">
-          <div class="q-label">Frage</div>
-          <div class="q-content">Warum werden die Vögel erst eingesperrt und dann soll man von ihnen lernen?</div>
-        </div>
-      </div>
-      <div class="card-answer">
-        <div class="a-icon">→</div>
-        <div class="a-text">
-          <div class="a-label">Grund</div>
-          <div class="a-content">Das passt zu Rassismus, weil man Gruppen zuerst unterdrückt (Käfig) und sie dann als „besonders" oder „exotisch" darstellt, um sich selbst besser zu fühlen. Das zeigt, wie Unterdrückung und Bewunderung gleichzeitig passieren können – und das ist im Grunde sehr egoistisch.</div>
-        </div>
-      </div>
-    </div>
+<div id="hint"><span>wischen</span><div class="harrow"></div></div>
 
-    <div class="card" data-delay="100">
-      <div class="card-question">
-        <div class="q-badge">2</div>
-        <div class="q-text">
-          <div class="q-label">Frage</div>
-          <div class="q-content">Ist es ok zu sagen, man weiß wie ein Vogel ist, nur weil man mit ihnen spielt?</div>
-        </div>
-      </div>
-      <div class="card-answer">
-        <div class="a-icon">→</div>
-        <div class="a-text">
-          <div class="a-label">Grund</div>
-          <div class="a-content">Oft denken Menschen, sie verstehen eine andere Kultur oder Gruppe vollständig, obwohl sie deren echte Probleme nie wirklich kennengelernt haben. Das ist wie bei Rassismus: Man bildet sich Vorurteile, ohne jemals wirklich mit diesen Menschen zu tun gehabt zu haben.</div>
-        </div>
-      </div>
-    </div>
+<script>
+var D = [
+  { cards: [
+    { q:"Frage 1",
+      question:"Warum werden die V\u00f6gel erst eingesperrt und dann soll man von ihnen lernen?",
+      answer:"Das passt zu Rassismus, weil man Gruppen zuerst unterdr\u00fcckt (K\u00e4fig) und sie dann als \u201ebesonders\u201c oder \u201eexotisch\u201c darstellt, um sich selbst besser zu f\u00fchlen. Das zeigt, wie Unterdr\u00fcckung und Bewunderung gleichzeitig passieren k\u00f6nnen \u2013 und das ist im Grunde sehr egoistisch." },
+    { q:"Frage 2",
+      question:"Ist es ok zu sagen, man wei\u00df wie ein Vogel ist, nur weil man mit ihnen spielt?",
+      answer:"Oft denken Menschen, sie verstehen eine andere Kultur oder Gruppe vollst\u00e4ndig, obwohl sie deren echte Probleme nie wirklich kennengelernt haben. Das ist wie bei Rassismus: Man bildet sich Vorurteile, ohne jemals wirklich mit diesen Menschen zu tun gehabt zu haben." },
+    { q:"Frage 3",
+      question:"Warum ist es \u201everr\u00fcckt\u201c, dass Singen und Tanzen so viel Macht hat?",
+      answer:"Das erinnert an Vorurteile, bei denen man bestimmten Gruppen nur Talent f\u00fcr Musik oder Sport zuschreibt, statt sie als genauso klug oder f\u00e4hig anzusehen. Das sind keine Fakten \u2013 das sind Vorurteile, die Menschen auf bestimmte Eigenschaften reduzieren." }
+  ]},
+  { cards: [
+    { q:"Frage 1",
+      question:"Warum muss Mowgli extra \u201eMeisterworte\u201c lernen, um im Dschungel sicher zu sein?",
+      answer:"Das ist vergleichbar mit Rassismus, wenn unterdr\u00fcckte Gruppen sich anpassen und fremde Regeln lernen m\u00fcssen, nur damit sie nicht angegriffen oder verachtet werden." },
+    { q:"Frage 2",
+      question:"Ist es rassistisch, dass Baloo sagt, Mowgli ist kein \u201eBaumstumpf\u201c zum Krallensch\u00e4rfen?",
+      answer:"Hier wird Mowgli nur \u00fcber seinen K\u00f6rper definiert \u2013 fast wie ein Objekt oder ein Sklave. Er wird nicht als gleichwertiges Wesen behandelt, sondern nur nach seinem Nutzen bewertet." },
+    { q:"Frage 3",
+      question:"Warum sagt Baloo, dass die Sch\u00fcler ihm nie danken?",
+      answer:"Das bedient das Vorurteil, dass die \u201e\u00fcberlegene\u201c Gruppe glaubt, sie tue den anderen etwas Gutes \u2013 zum Beispiel durch Bildung. Dabei wirkt es dann so, als w\u00e4ren die anderen undankbar, obwohl das System von Anfang an ungerecht ist." },
+    { q:"Frage 4",
+      question:"Warum muss Mowgli den \u201eAkzent des B\u00e4ren\u201c nutzen, um dazuzugeh\u00f6ren?",
+      answer:"Das zeigt, dass man nur akzeptiert wird, wenn man die Identit\u00e4t der Mehrheit \u00fcbernimmt und die eigene Herkunft versteckt. Das ist \u00e4hnlich wie bei Sprache und Kultur: Alles, was fremd ist, wird abgelehnt." },
+    { q:"Frage 5",
+      question:"Warum ist Schutz im Dschungel von \u201eMeisterworten\u201c abh\u00e4ngig?",
+      answer:"Das System ist unfair. Wer die Regeln der Herrschenden nicht kennt, hat keinen Anspruch auf Schutz \u2013 das ist eine rassistische Machtstruktur, die Au\u00dfenseiter bewusst benachteiligt." }
+  ]}
+];
 
-    <div class="card" data-delay="200">
-      <div class="card-question">
-        <div class="q-badge">3</div>
-        <div class="q-text">
-          <div class="q-label">Frage</div>
-          <div class="q-content">Warum ist es „verrückt", dass Singen und Tanzen so viel Macht hat?</div>
-        </div>
-      </div>
-      <div class="card-answer">
-        <div class="a-icon">→</div>
-        <div class="a-text">
-          <div class="a-label">Grund</div>
-          <div class="a-content">Das erinnert an Vorurteile, bei denen man bestimmten Gruppen nur Talent für Musik oder Sport zuschreibt, statt sie als genauso klug oder fähig anzusehen. Das sind keine Fakten – das sind Vorurteile, die Menschen auf bestimmte Eigenschaften reduzieren.</div>
-        </div>
-      </div>
-    </div>
+var vp     = document.getElementById('vp');
+var dotsEl = document.getElementById('dots');
+var tabs   = document.querySelectorAll('.tab');
 
-    <div class="scroll-hint">
-      <span>weiter scrollen</span>
-      <div class="scroll-hint-arrow"></div>
-    </div>
+var curT    = 0;
+var curC    = [0, 0];
+var busy    = false;
+var slides  = [];
 
-  </section>
+// Build slides
+for (var t = 0; t < D.length; t++) {
+  var ts = [];
+  for (var c = 0; c < D[t].cards.length; c++) {
+    var card = D[t].cards[c];
+    var el = document.createElement('div');
+    el.className = 'slide below instant';
+    el.style.display = 'none';
+    el.innerHTML =
+      '<div class="panel" data-num="0' + (c+1) + '">' +
+        '<div class="q-tag">' + card.q + '</div>' +
+        '<div class="q-text">' + card.question + '</div>' +
+        '<div class="divider"></div>' +
+        '<div class="a-tag">Begr\u00fcndung</div>' +
+        '<div class="a-text">' + card.answer + '</div>' +
+      '</div>';
+    vp.appendChild(el);
+    ts.push(el);
+  }
+  slides.push(ts);
+}
 
-  <div class="page-divider"></div>
+function pc(i, a) { return i < a ? 'above' : i === a ? 'active' : 'below'; }
 
-  <!-- ══ PAGE 2 ══ -->
-  <section class="page" id="text2">
+function updateDots(t) {
+  var n = D[t].cards.length, a = curC[t];
+  dotsEl.innerHTML = '';
+  for (var i = 0; i < n; i++) {
+    var d = document.createElement('div');
+    d.className = 'dot' + (i === a ? ' on' : '');
+    dotsEl.appendChild(d);
+  }
+}
 
-    <div class="page-header" id="header2">
-      <div class="page-label">LER · Rassismus</div>
-      <div class="page-title">Text 2</div>
-      <div class="page-subtitle">Mowgli · Das Dschungelbuch</div>
-    </div>
-
-    <div class="card" data-delay="0">
-      <div class="card-question">
-        <div class="q-badge">1</div>
-        <div class="q-text">
-          <div class="q-label">Frage</div>
-          <div class="q-content">Warum muss Mowgli extra „Meisterworte" lernen, um im Dschungel sicher zu sein?</div>
-        </div>
-      </div>
-      <div class="card-answer">
-        <div class="a-icon">→</div>
-        <div class="a-text">
-          <div class="a-label">Grund</div>
-          <div class="a-content">Das ist vergleichbar mit Rassismus, wenn unterdrückte Gruppen sich anpassen und fremde Regeln lernen müssen, nur damit sie nicht angegriffen oder verachtet werden.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card" data-delay="100">
-      <div class="card-question">
-        <div class="q-badge">2</div>
-        <div class="q-text">
-          <div class="q-label">Frage</div>
-          <div class="q-content">Ist es rassistisch, dass Baloo sagt, Mowgli ist kein „Baumstumpf" zum Krallenschärfen?</div>
-        </div>
-      </div>
-      <div class="card-answer">
-        <div class="a-icon">→</div>
-        <div class="a-text">
-          <div class="a-label">Grund</div>
-          <div class="a-content">Hier wird Mowgli nur über seinen Körper definiert – fast wie ein Objekt oder ein Sklave. Er wird nicht als gleichwertiges Wesen behandelt, sondern nur nach seinem Nutzen bewertet.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card" data-delay="200">
-      <div class="card-question">
-        <div class="q-badge">3</div>
-        <div class="q-text">
-          <div class="q-label">Frage</div>
-          <div class="q-content">Warum sagt Baloo, dass die Schüler ihm nie danken?</div>
-        </div>
-      </div>
-      <div class="card-answer">
-        <div class="a-icon">→</div>
-        <div class="a-text">
-          <div class="a-label">Grund</div>
-          <div class="a-content">Das bedient das Vorurteil, dass die „überlegene" Gruppe glaubt, sie tue den anderen etwas Gutes – zum Beispiel durch Bildung. Dabei wirkt es dann so, als wären die anderen undankbar, obwohl das System von Anfang an ungerecht ist.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card" data-delay="300">
-      <div class="card-question">
-        <div class="q-badge">4</div>
-        <div class="q-text">
-          <div class="q-label">Frage</div>
-          <div class="q-content">Warum muss Mowgli den „Akzent des Bären" nutzen, um dazuzugehören?</div>
-        </div>
-      </div>
-      <div class="card-answer">
-        <div class="a-icon">→</div>
-        <div class="a-text">
-          <div class="a-label">Grund</div>
-          <div class="a-content">Das zeigt, dass man nur akzeptiert wird, wenn man die Identität der Mehrheit übernimmt und die eigene Herkunft versteckt. Das ist ähnlich wie bei Sprache und Kultur: Alles, was fremd ist, wird abgelehnt.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card" data-delay="400">
-      <div class="card-question">
-        <div class="q-badge">5</div>
-        <div class="q-text">
-          <div class="q-label">Frage</div>
-          <div class="q-content">Warum ist Schutz im Dschungel von „Meisterworten" abhängig?</div>
-        </div>
-      </div>
-      <div class="card-answer">
-        <div class="a-icon">→</div>
-        <div class="a-text">
-          <div class="a-label">Grund</div>
-          <div class="a-content">Das System ist unfair. Wer die Regeln der Herrschenden nicht kennt, hat keinen Anspruch auf Schutz – das ist eine rassistische Machtstruktur, die Außenseiter bewusst benachteiligt.</div>
-        </div>
-      </div>
-    </div>
-
-  </section>
-
-  <script>
-    // ── Intersection Observer for card animations ──
-    var observer = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (entry.isIntersecting) {
-          var el = entry.target;
-          var delay = el.getAttribute('data-delay') || 0;
-          setTimeout(function() {
-            el.classList.add('visible');
-          }, parseInt(delay));
-          observer.unobserve(el);
-        }
-      });
-    }, { threshold: 0.15 });
-
-    document.querySelectorAll('.card, .page-header').forEach(function(el) {
-      observer.observe(el);
+function showText(t, anim) {
+  var cs = slides[t], a = curC[t];
+  for (var i = 0; i < cs.length; i++) {
+    cs[i].style.display = '';
+    cs[i].className = 'slide below instant';
+  }
+  if (!anim) {
+    // force reflow then set instant positions
+    cs[0] && cs[0].offsetHeight;
+    for (var i = 0; i < cs.length; i++) cs[i].className = 'slide ' + pc(i, a) + ' instant';
+    updateDots(t);
+    return;
+  }
+  // reflow, then animate active card in from below; others snap to position
+  cs[0] && cs[0].offsetHeight;
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      for (var i = 0; i < cs.length; i++) {
+        if (i === a) cs[i].className = 'slide active'; // animate from below
+        else         cs[i].className = 'slide ' + pc(i, a) + ' instant';
+      }
+      updateDots(t);
     });
+  });
+}
 
-    // ── Nav active state ──
-    var sections = [
-      document.getElementById('text1'),
-      document.getElementById('text2')
-    ];
-    var navBtns = [
-      document.getElementById('nav1'),
-      document.getElementById('nav2')
-    ];
+function hideText(t) {
+  var cs = slides[t];
+  for (var i = 0; i < cs.length; i++) {
+    cs[i].style.display = 'none';
+    cs[i].className = 'slide below instant';
+  }
+}
 
-    var navObserver = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
-          var id = entry.target.id;
-          navBtns.forEach(function(btn) { btn.classList.remove('active'); });
-          if (id === 'text1') navBtns[0].classList.add('active');
-          if (id === 'text2') navBtns[1].classList.add('active');
-        }
-      });
-    }, { threshold: 0.3 });
+function switchT(t) {
+  if (t === curT) return;
+  hideText(curT);
+  curT = t;
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle('active', i === t);
+  showText(t, true);
+}
 
-    sections.forEach(function(s) { navObserver.observe(s); });
-  </script>
+function go(dir) {
+  if (busy) return;
+  var n = D[curT].cards.length, next = curC[curT] + dir;
+  if (next < 0 || next >= n) return;
+  busy = true;
+  curC[curT] = next;
+  var cs = slides[curT];
+  for (var i = 0; i < cs.length; i++) cs[i].className = 'slide ' + pc(i, next);
+  updateDots(curT);
+  setTimeout(function() { busy = false; }, 580);
+}
 
+// Init
+showText(0, false);
+
+// Touch
+var ty0 = 0, tx0 = 0;
+document.addEventListener('touchstart', function(e) {
+  ty0 = e.touches[0].clientY; tx0 = e.touches[0].clientX;
+}, { passive: true });
+document.addEventListener('touchend', function(e) {
+  var dy = ty0 - e.changedTouches[0].clientY;
+  var dx = Math.abs(tx0 - e.changedTouches[0].clientX);
+  if (Math.abs(dy) > 48 && Math.abs(dy) > dx) go(dy > 0 ? 1 : -1);
+}, { passive: true });
+
+// Wheel
+var wLock = false;
+document.addEventListener('wheel', function(e) {
+  e.preventDefault();
+  if (wLock || Math.abs(e.deltaY) < 12) return;
+  wLock = true;
+  go(e.deltaY > 0 ? 1 : -1);
+  setTimeout(function() { wLock = false; }, 650);
+}, { passive: false });
+
+// Keys
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') go(1);
+  if (e.key === 'ArrowUp'   || e.key === 'ArrowLeft')  go(-1);
+  if (e.key === '1') switchT(0);
+  if (e.key === '2') switchT(1);
+});
+</script>
 </body>
 </html>
