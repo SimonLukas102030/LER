@@ -1,347 +1,717 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>LER – Rassismus</title>
-  <style>
-    *, *::before, *::after {
-      box-sizing: border-box; margin: 0; padding: 0;
-      -webkit-tap-highlight-color: transparent;
-    }
-    :root {
-      --blue:  #2E74B5;
-      --blue2: #5a9fd4;
-      --glow:  rgba(46,116,181,0.3);
-      --bg:    #080c14;
-      --text:  #e8eaf0;
-      --sub:   #8892a4;
-    }
-    html, body {
-      height: 100%; overflow: hidden;
-      background: var(--bg);
-      font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
-      color: var(--text);
-      -webkit-font-smoothing: antialiased;
-      user-select: none; -webkit-user-select: none;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Newcomb's Paradox – LER</title>
+<style>
 
-    /* ── subtle bg glow ── */
-    body::before {
-      content: '';
-      position: fixed; inset: 0; pointer-events: none;
-      background:
-        radial-gradient(ellipse 55% 45% at 15% 65%, rgba(46,116,181,0.07) 0%, transparent 70%),
-        radial-gradient(ellipse 45% 35% at 85% 25%, rgba(46,116,181,0.05) 0%, transparent 70%);
-    }
+:root {
+  --blue:   #2E74B5;
+  --dark:   #1F3864;
+  --light:  #EBF2FA;
+  --orange: #ED7D31;
+  --red:    #C00000;
+  --green:  #2E7D32;
+  --gray:   #666;
+  --font:   'Aptos', 'Segoe UI', system-ui, sans-serif;
+  --ease:   cubic-bezier(.4,0,.2,1);
 
-    /* ── TOP NAV ── */
-    #nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      display: flex; justify-content: center; gap: 10px;
-      padding: 16px 20px 20px;
-      background: linear-gradient(to bottom, rgba(8,12,20,0.97) 55%, transparent);
-    }
-    .tab {
-      padding: 9px 30px; border-radius: 26px;
-      border: 1.5px solid rgba(46,116,181,0.25);
-      background: rgba(46,116,181,0.06);
-      color: var(--sub); font-size: 14px; font-weight: 700;
-      cursor: pointer; font-family: inherit;
-      -webkit-transition: all 0.3s; transition: all 0.3s;
-    }
-    .tab.active {
-      background: var(--blue); border-color: var(--blue);
-      color: #fff; box-shadow: 0 4px 24px var(--glow);
-    }
+  /* Proportionale Abstände – einmal definiert, überall genutzt */
+  --sp-xs:  clamp(4px,  0.6vh, 8px);
+  --sp-s:   clamp(6px,  0.9vh, 12px);
+  --sp-m:   clamp(10px, 1.4vh, 18px);
+  --sp-l:   clamp(14px, 2vh,   24px);
+  --sp-xl:  clamp(20px, 2.8vh, 36px);
+  --px-s:   clamp(8px,  1.2vw, 16px);
+  --px-m:   clamp(14px, 2vw,   26px);
+  --px-l:   clamp(24px, 4vw,   56px);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%;
+  font-family: var(--font);
+  background: #0a0a0a;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
 
-    /* ── VIEWPORT ── */
-    #vp { position: fixed; inset: 0; overflow: hidden; }
+/* ── SLIDE ENGINE ── */
+#deck { position: relative; width: 100vw; height: 100vh; }
 
-    /* ── SLIDES ── */
-    .slide {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      padding: 76px 22px 88px;
-      -webkit-transition: -webkit-transform 0.52s cubic-bezier(0.4,0,0.2,1), opacity 0.52s ease;
-              transition:         transform 0.52s cubic-bezier(0.4,0,0.2,1), opacity 0.52s ease;
-    }
-    .slide.above  { -webkit-transform: translateY(-105%); transform: translateY(-105%); opacity: 0; }
-    .slide.active { -webkit-transform: translateY(0);     transform: translateY(0);     opacity: 1; }
-    .slide.below  { -webkit-transform: translateY(105%);  transform: translateY(105%);  opacity: 0; }
-    .slide.instant { -webkit-transition: none !important; transition: none !important; }
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  padding: clamp(24px,3.2vh,52px) clamp(32px,5vw,80px) clamp(28px,4.5vh,60px);
+  opacity: 0; pointer-events: none;
+  transform: translateX(55px);
+  transition: opacity .38s var(--ease), transform .38s var(--ease);
+  will-change: opacity, transform;
+}
+.slide.active     { opacity: 1; pointer-events: all; transform: translateX(0); }
+.slide.exit-left  { opacity: 0; transform: translateX(-55px); pointer-events: none; }
+.slide.exit-right { opacity: 0; transform: translateX(55px);  pointer-events: none; }
+.slide.from-left  { transform: translateX(-55px); }
 
-    /* ── PANEL ── */
-    .panel {
-      position: relative; overflow: hidden;
-      width: 100%; max-width: 650px;
-      background: rgba(14,21,38,0.88);
-      border: 1px solid rgba(46,116,181,0.14);
-      border-radius: 26px; padding: 36px 32px 32px;
-      -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
-      box-shadow: 0 28px 72px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
-    }
+/* ── HINTERGRÜNDE ── */
+.s-title    { background: var(--dark); }
+.s-content  { background: #fff; }
+.s-interact { background: var(--light); }
+.s-video    { background: #0f0f0f; align-items: center; justify-content: center; }
+.s-end      { background: #0a0a0a; }
 
-    /* big number watermark */
-    .panel::before {
-      content: attr(data-num);
-      position: absolute; top: -14px; right: 18px;
-      font-size: 110px; font-weight: 900; line-height: 1;
-      letter-spacing: -6px; color: rgba(46,116,181,0.08);
-      pointer-events: none;
-    }
+/* ── TITEL-FOLIE ── */
+.title-inner {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; height: 100%; gap: clamp(10px,1.8vh,22px);
+}
+.main-title {
+  font-size: clamp(46px, 8vw, 90px);
+  font-weight: 900; color: #fff;
+  line-height: 1.05; letter-spacing: -1px;
+}
+.main-title span { color: #5ba3e0; }
+.title-sub { font-size: clamp(14px, 1.8vw, 22px); color: rgba(255,255,255,.5); }
 
-    /* top accent line */
-    .panel::after {
-      content: '';
-      position: absolute; top: 0; left: 32px; right: 32px; height: 2px;
-      background: linear-gradient(to right, var(--blue), rgba(46,116,181,0.15));
-      border-radius: 0 0 2px 2px;
-    }
+/* ── ÜBERSCHRIFTEN & BADGE ── */
+.heading {
+  font-size: clamp(18px, 2.4vw, 34px);
+  font-weight: 800; color: var(--blue);
+  border-bottom: clamp(2px,0.3vh,3px) solid var(--blue);
+  padding-bottom: var(--sp-s);
+  margin-bottom: var(--sp-l);
+  flex-shrink: 0; display: flex; align-items: center; gap: var(--sp-m);
+}
+.badge {
+  font-size: clamp(9px, 0.9vw, 11px); font-weight: 700;
+  padding: clamp(2px,.4vh,4px) clamp(8px,1vw,13px);
+  border-radius: 20px; letter-spacing: 1.2px;
+  text-transform: uppercase; flex-shrink: 0;
+}
+.badge-orange { background: var(--orange); color: #fff; }
 
-    .q-tag {
-      display: inline-flex; align-items: center;
-      padding: 4px 12px; border-radius: 20px; margin-bottom: 16px;
-      background: rgba(46,116,181,0.14); border: 1px solid rgba(46,116,181,0.22);
-      font-size: 11px; font-weight: 700; letter-spacing: 2.5px;
-      text-transform: uppercase; color: var(--blue2);
-    }
-    .q-text {
-      font-size: clamp(17px, 3.8vw, 22px); font-weight: 700;
-      line-height: 1.45; color: var(--text); margin-bottom: 28px;
-    }
-    .divider {
-      height: 2px; border-radius: 2px; margin-bottom: 22px;
-      background: linear-gradient(to right, var(--blue), rgba(46,116,181,0.08));
-    }
-    .a-tag {
-      font-size: 10px; font-weight: 700; letter-spacing: 2.5px;
-      text-transform: uppercase; color: var(--sub); margin-bottom: 10px;
-    }
-    .a-text {
-      font-size: clamp(14px, 3vw, 16px); color: #aab8cc; line-height: 1.78;
-    }
+/* ── BULLET LISTS ── */
+ul.bullets { list-style: none; }
+ul.bullets li {
+  padding: clamp(3px,.5vh,6px) 0 clamp(3px,.5vh,6px) clamp(18px,2vw,26px);
+  position: relative;
+  font-size: clamp(13px, 1.55vw, 20px); line-height: 1.5; color: #333;
+}
+ul.bullets li::before { content: "▸"; position: absolute; left: 0; color: var(--blue); }
+ul.bullets li.sub {
+  padding-left: clamp(34px,4vw,50px); color: var(--gray);
+  font-size: clamp(11px, 1.3vw, 17px);
+}
+ul.bullets li.sub::before { left: clamp(16px,1.8vw,22px); content: "–"; color: #bbb; }
+ul.bullets li.hl  { color: var(--blue); font-weight: 700; }
+ul.bullets li.err { color: var(--red); }
+ul.bullets li.ok  { color: var(--green); }
+.s-head {
+  font-weight: 700; color: var(--blue);
+  font-size: clamp(13px, 1.55vw, 19px);
+  margin: var(--sp-m) 0 var(--sp-xs); padding: 0;
+}
+.s-head::before { content: ""; }
 
-    /* ── BOTTOM BAR ── */
-    #bbar {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-      padding: 16px 28px 26px;
-      display: flex; justify-content: space-between; align-items: flex-end;
-      background: linear-gradient(to top, rgba(8,12,20,0.92) 55%, transparent);
-      pointer-events: none;
-    }
-    .info-name { font-size: 13px; font-weight: 700; color: rgba(232,234,240,0.55); }
-    .info-meta { font-size: 11px; color: var(--sub); margin-top: 3px; letter-spacing: 0.3px; }
+/* ── STAGGER ANIMATIONS ── */
+[data-anim] {
+  opacity: 0; transform: translateY(18px);
+  transition: opacity .44s var(--ease), transform .44s var(--ease);
+}
+[data-anim].in { opacity: 1; transform: translateY(0); }
 
-    /* dots */
-    #dots { display: flex; gap: 7px; align-items: center; }
-    .dot {
-      width: 7px; height: 7px; border-radius: 4px;
-      background: rgba(255,255,255,0.16);
-      -webkit-transition: all 0.3s; transition: all 0.3s;
-    }
-    .dot.on {
-      width: 22px; background: var(--blue);
-      box-shadow: 0 0 10px var(--glow);
-    }
+/* ── VIDEO ── */
+.video-wrap {
+  position: relative; width: 100%;
+  max-width: min(860px, 88vw);
+  max-height: 75vh;
+  aspect-ratio: 16/9; border-radius: clamp(6px,1vw,14px); overflow: hidden;
+  box-shadow: 0 clamp(12px,2vh,28px) clamp(24px,4vh,64px) rgba(0,0,0,.7);
+}
+.video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+.video-label {
+  color: rgba(255,255,255,.4);
+  font-size: clamp(11px,1.2vw,15px);
+  margin-top: var(--sp-m); text-align: center;
+}
 
-    /* ── SWIPE HINT ── */
-    #hint {
-      position: fixed; bottom: 72px; left: 50%;
-      -webkit-transform: translateX(-50%); transform: translateX(-50%);
-      z-index: 99; display: flex; flex-direction: column; align-items: center; gap: 6px;
-      color: var(--sub); font-size: 12px; pointer-events: none;
-      opacity: 0; -webkit-animation: hfade 3.5s ease 1.2s forwards; animation: hfade 3.5s ease 1.2s forwards;
-    }
-    .harrow {
-      width: 2px; height: 28px; border-radius: 2px;
-      background: linear-gradient(to bottom, transparent, var(--blue));
-      -webkit-animation: ha 1.5s ease infinite; animation: ha 1.5s ease infinite;
-    }
-    @-webkit-keyframes hfade { 0%{opacity:0} 15%{opacity:1} 80%{opacity:1} 100%{opacity:0} }
-    @keyframes         hfade { 0%{opacity:0} 15%{opacity:1} 80%{opacity:1} 100%{opacity:0} }
-    @-webkit-keyframes ha { 0%,100%{-webkit-transform:translateY(0);opacity:.4} 50%{-webkit-transform:translateY(5px);opacity:1} }
-    @keyframes         ha { 0%,100%{transform:translateY(0);opacity:.4}         50%{transform:translateY(5px);opacity:1}         }
-  </style>
+/* ── BOX-VISUALISIERUNG ── */
+.box-row {
+  display: flex; gap: clamp(16px, 4vw, 60px);
+  justify-content: center;
+  margin: var(--sp-m) 0; flex-shrink: 0;
+}
+.box {
+  width: clamp(120px, 16vw, 220px);
+  height: clamp(90px, 13vh, 170px);
+  border-radius: clamp(8px,1vw,14px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  padding: clamp(10px,1.5vw,16px);
+  gap: clamp(4px,.6vh,8px);
+  box-shadow: 0 clamp(4px,.8vh,10px) clamp(12px,2vw,26px) rgba(0,0,0,.15);
+}
+.box-a { background: var(--blue); color: #fff; }
+.box-b { background: var(--dark); color: #fff; }
+.box-label    { font-size: clamp(20px, 3.2vw, 40px); font-weight: 900; }
+.box-amount   { font-size: clamp(11px, 1.4vw, 17px); font-weight: 600; opacity: .9; line-height: 1.4; }
+.box-question { font-size: clamp(18px, 2.8vw, 34px); opacity: .5; }
+
+/* ── CALLOUTS ── */
+.callout {
+  background: var(--light); border: 2px solid var(--blue);
+  border-radius: clamp(6px,.8vw,12px);
+  padding: clamp(8px,1.2vh,14px) clamp(10px,1.4vw,18px);
+  margin: var(--sp-s) 0;
+  font-size: clamp(12px, 1.35vw, 17px); line-height: 1.5;
+}
+.callout.green { background: #e8f5e9; border-color: #4caf50; }
+.callout strong { color: var(--blue); }
+.callout.green strong { color: var(--green); }
+
+/* ── FORMEL ── */
+.formula-box {
+  background: #f8f8f8; border-radius: clamp(6px,.8vw,12px);
+  padding: clamp(10px,1.4vh,16px) clamp(12px,1.6vw,22px);
+  font-family: 'Courier New', monospace;
+  font-size: clamp(11px, 1.3vw, 16px); line-height: 1.9; color: #333;
+  margin: var(--sp-s) 0;
+}
+.formula-box .big   { color: var(--green); font-weight: 700; font-size: 1.1em; }
+.formula-box .small { color: var(--red); }
+
+/* ── LAYOUTS ── */
+.two-col   { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(10px,2vw,28px); flex: 1; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: clamp(8px,1.6vw,22px); flex: 1; }
+.col-card  { background: var(--light); border-radius: clamp(6px,.8vw,12px); padding: clamp(12px,1.8vh,22px); }
+.col-title {
+  font-size: clamp(13px,1.5vw,19px); font-weight: 700; color: var(--blue);
+  margin-bottom: var(--sp-s);
+}
+.col-body  { font-size: clamp(11px, 1.25vw, 15px); color: #444; line-height: 1.55; }
+
+.pill {
+  display: inline-block;
+  padding: clamp(2px,.3vh,4px) clamp(8px,1vw,13px);
+  border-radius: 20px; font-size: clamp(9px,.9vw,12px); font-weight: 700;
+  margin-bottom: var(--sp-s); text-transform: uppercase; letter-spacing: .8px;
+}
+.pill-blue  { background: var(--blue);  color: #fff; }
+.pill-dark  { background: var(--dark);  color: #fff; }
+.pill-green { background: #388e3c;      color: #fff; }
+
+/* ── PARADOX ── */
+.stmt {
+  border-radius: 0 clamp(4px,.6vw,10px) clamp(4px,.6vw,10px) 0;
+  padding: clamp(9px,1.2vh,15px) clamp(10px,1.4vw,18px);
+  margin-bottom: var(--sp-s);
+  font-size: clamp(13px,1.5vw,19px);
+}
+.stmt-ok  { background: #e8f5e9; border-left: 5px solid #4caf50; color: #2e7d32; }
+.stmt-bad { background: #ffebee; border-left: 5px solid var(--red); color: var(--red); font-weight: 700; }
+.paradox-concl {
+  text-align: center; font-size: clamp(15px,2vw,25px);
+  font-weight: 800; color: var(--blue); margin-top: var(--sp-m);
+}
+.history {
+  text-align: center; color: #bbb;
+  font-size: clamp(10px,1.1vw,14px);
+  margin-top: var(--sp-s); line-height: 1.7;
+}
+
+/* ── PEER DISCUSSION ── */
+.peer-center {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; gap: clamp(12px,2vh,24px);
+}
+.big-q {
+  font-size: clamp(20px, 3.2vw, 44px);
+  font-weight: 800; color: var(--dark); line-height: 1.2;
+}
+.instruction {
+  font-size: clamp(14px, 1.7vw, 22px);
+  background: #fff;
+  padding: clamp(10px,1.4vh,16px) clamp(16px,2.5vw,32px);
+  border-radius: clamp(6px,.8vw,12px);
+  box-shadow: 0 2px 18px rgba(0,0,0,.08); color: #555;
+}
+.instruction strong { color: var(--orange); }
+.timer-wrap { display: flex; flex-direction: column; align-items: center; gap: var(--sp-m); }
+#timer-num {
+  font-size: clamp(56px, 10vw, 108px); font-weight: 900;
+  color: var(--dark); line-height: 1; font-variant-numeric: tabular-nums;
+  transition: color .3s;
+}
+#timer-num.urgent { color: var(--red); animation: pulse .6s infinite; }
+#timer-num.done   { color: var(--red); }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+#timer-btn {
+  padding: clamp(8px,1.2vh,14px) clamp(18px,2.5vw,32px);
+  background: var(--orange); color: #fff;
+  border: none; border-radius: clamp(6px,.8vw,10px);
+  font-size: clamp(13px,1.5vw,18px); font-weight: 600;
+  cursor: pointer; font-family: var(--font); transition: background .2s, transform .1s;
+}
+#timer-btn:hover  { background: #c95e1a; }
+#timer-btn:active { transform: scale(.97); }
+
+/* ── VOTING ── */
+.vote-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: clamp(12px,2.2vw,36px); flex: 1; margin-top: var(--sp-s);
+}
+.v-card {
+  border-radius: clamp(8px,1.2vw,16px);
+  padding: clamp(16px,3vh,34px) clamp(14px,2vw,26px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; color: #fff;
+  box-shadow: 0 clamp(4px,.8vh,10px) clamp(14px,2.5vw,30px) rgba(0,0,0,.15);
+  transition: transform .2s;
+}
+.v-card:hover { transform: translateY(-3px); }
+.v-card.blue-c { background: var(--blue); }
+.v-card.dark-c { background: var(--dark); }
+.v-card .v-title  {
+  font-size: clamp(18px,2.5vw,32px); font-weight: 800;
+  margin-bottom: clamp(8px,1.2vh,16px);
+}
+.v-card .v-detail { font-size: clamp(12px,1.3vw,17px); opacity: .88; line-height: 1.6; }
+.menti-row {
+  display: flex; align-items: center; gap: clamp(10px,1.8vw,22px);
+  margin-top: var(--sp-m); justify-content: center;
+}
+.menti-code {
+  font-size: clamp(18px,2.6vw,34px); font-weight: 900;
+  color: var(--dark); letter-spacing: 3px;
+  background: var(--light);
+  padding: clamp(6px,1vh,12px) clamp(12px,1.8vw,26px);
+  border-radius: clamp(6px,.8vw,12px); border: 2px solid var(--blue);
+}
+.menti-code span { font-size: .55em; font-weight: 500; display: block; letter-spacing: 0; color: var(--gray); }
+.menti-btn {
+  padding: clamp(8px,1.2vh,14px) clamp(14px,2vw,26px);
+  background: var(--orange); color: #fff;
+  border: none; border-radius: clamp(6px,.8vw,12px);
+  font-size: clamp(12px,1.4vw,17px); font-weight: 700;
+  cursor: pointer; font-family: var(--font);
+  transition: background .2s, transform .1s; white-space: nowrap;
+}
+.menti-btn:hover  { background: #c95e1a; }
+.menti-btn:active { transform: scale(.97); }
+
+/* ── ABSCHLUSSFRAGE ── */
+.end-inner {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; text-align: center;
+  gap: clamp(14px,2.5vh,32px);
+}
+.end-label {
+  font-size: clamp(10px,1vw,14px); font-weight: 600; letter-spacing: 3px;
+  text-transform: uppercase; color: rgba(255,255,255,.3);
+}
+.end-question {
+  font-size: clamp(38px, 7vw, 84px);
+  font-weight: 900; color: #fff; line-height: 1.08; letter-spacing: -1px;
+}
+.end-question span { color: #5ba3e0; }
+.end-sub {
+  font-size: clamp(13px, 1.7vw, 21px);
+  color: rgba(255,255,255,.4);
+  max-width: clamp(280px,42vw,600px);
+  line-height: 1.6; font-style: italic;
+}
+.end-options {
+  display: flex; gap: clamp(12px,2.5vw,40px);
+}
+.end-opt {
+  padding: clamp(12px,1.8vh,22px) clamp(16px,2.2vw,30px);
+  border-radius: clamp(8px,1vw,14px);
+  font-size: clamp(12px,1.4vw,18px); line-height: 1.5;
+  max-width: clamp(200px,20vw,280px); text-align: left;
+}
+.end-opt.yes { background: rgba(46,116,181,.2); border: 2px solid rgba(46,116,181,.5); color: #8ec6f0; }
+.end-opt.no  { background: rgba(192,0,0,.15);   border: 2px solid rgba(192,0,0,.4);   color: #f08080; }
+.end-opt strong { display: block; font-size: 1.1em; margin-bottom: var(--sp-xs); }
+
+/* ── BLACKOUT ── */
+#blackout {
+  position: fixed; inset: 0; background: #000; z-index: 900;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .5s;
+}
+#blackout.active { opacity: 1; pointer-events: all; }
+#blackout p { color: rgba(255,255,255,.1); font-size: 13px; letter-spacing: 1px; font-family: var(--font); }
+
+/* ── UI CHROME ── */
+#progress {
+  position: fixed; bottom: 0; left: 0; height: 3px;
+  background: var(--blue); transition: width .35s var(--ease); z-index: 50;
+}
+#counter {
+  position: fixed; bottom: clamp(6px,1vh,14px); right: clamp(10px,1.5vw,20px);
+  font-size: clamp(10px,1vw,13px); z-index: 50;
+  font-family: var(--font); transition: color .3s;
+}
+</style>
 </head>
 <body>
+<div id="deck">
 
-<nav id="nav">
-  <button class="tab active" onclick="switchT(0)">Text 1</button>
-  <button class="tab"        onclick="switchT(1)">Text 2</button>
-</nav>
 
-<div id="vp"></div>
-
-<div id="bbar">
-  <div>
-    <div class="info-name">Simon Köper &middot; Klasse 9/1</div>
-    <div class="info-meta">LER &middot; Herr Fernandez &middot; Gymnasium Berthold Brecht</div>
+<!-- ══════════════════════════════
+     1 – Titel
+══════════════════════════════ -->
+<div class="slide s-title active">
+  <div class="title-inner">
+    <div class="main-title" data-anim>Newcomb's<br><span>Paradox</span></div>
+    <div class="title-sub" data-anim>Ein Gedankenexperiment &nbsp;·&nbsp; LER Klasse 9/1</div>
   </div>
-  <div id="dots"></div>
 </div>
 
-<div id="hint"><span>wischen</span><div class="harrow"></div></div>
+
+<!-- ══════════════════════════════
+     2 – Video
+══════════════════════════════ -->
+<div class="slide s-video">
+  <div class="video-wrap" data-anim>
+    <iframe
+      src="https://www.youtube.com/embed/Ol18JoeXlVI?start=24&end=111&rel=0&modestbranding=1"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen>
+    </iframe>
+  </div>
+  <div class="video-label" data-anim>Veritasium – Newcomb's Problem &nbsp;·&nbsp; 0:24 – 1:51</div>
+</div>
+
+
+<!-- ══════════════════════════════
+     3 – Die zwei Boxen
+══════════════════════════════ -->
+<div class="slide s-content">
+  <div class="heading" data-anim>Die zwei Boxen</div>
+  <div class="box-row" data-anim>
+    <div class="box box-a">
+      <div class="box-label">A</div>
+      <div class="box-amount">Immer<br><strong>1.000 €</strong></div>
+    </div>
+    <div class="box box-b">
+      <div class="box-label">B</div>
+      <div class="box-question">?</div>
+      <div class="box-amount"><strong>1.000.000 €</strong><br>oder<br><strong>0 €</strong></div>
+    </div>
+  </div>
+  <ul class="bullets">
+    <li data-anim>Du kannst <strong>beide Boxen</strong> nehmen – oder <strong>nur Box B</strong></li>
+    <li data-anim>Du siehst beide Boxen, kannst aber <strong>nicht hineinsehen</strong></li>
+    <li data-anim class="hl">Was in Box B ist, steht zum Zeitpunkt deiner Wahl <strong>bereits fest</strong></li>
+    <li data-anim class="err">Mit deiner Wahl kannst du den Inhalt von Box B <strong>nicht mehr verändern</strong></li>
+  </ul>
+</div>
+
+
+<!-- ══════════════════════════════
+     4 – Der Prädiktor
+══════════════════════════════ -->
+<div class="slide s-content">
+  <div class="heading" data-anim>Der Prädiktor</div>
+  <ul class="bullets">
+    <li data-anim>Hat dich <strong>dein ganzes Leben lang</strong> beobachtet</li>
+    <li data-anim>Kennt deine Denkweise, Gewohnheiten und Muster</li>
+    <li data-anim class="hl">Liegt bei seiner Vorhersage <strong>nahezu immer richtig</strong> – sagen wir: 99 %</li>
+    <li data-anim>Hat seine Vorhersage <strong>bereits getroffen</strong> und Box B entsprechend befüllt</li>
+    <li data-anim class="err">Du kannst seine Entscheidung <strong>nicht mehr rückgängig machen</strong></li>
+  </ul>
+  <div class="callout" style="margin-top:16px" data-anim>
+    <strong>Entscheidend:</strong> Wenn der Prädiktor vorhergesagt hat, dass du <em>beide</em> nimmst &rarr; Box B ist leer.
+    Wenn er vorhergesagt hat, dass du <em>nur Box B</em> nimmst &rarr; Box B enthält 1.000.000 &euro;.
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     5 – Peer-Diskussion
+══════════════════════════════ -->
+<div class="slide s-interact">
+  <div class="heading" data-anim>
+    <span class="badge badge-orange">Interaktiv</span>
+    Erstmal selbst nachdenken!
+  </div>
+  <div class="peer-center">
+    <div class="big-q" data-anim>Was würdest du nehmen?<br>Beide Boxen – oder nur Box B?</div>
+    <div class="instruction" data-anim>Diskutiert <strong>1 Minute</strong> mit eurem Nachbarn!</div>
+    <div class="timer-wrap" data-anim>
+      <div id="timer-num">60</div>
+      <button id="timer-btn" onclick="toggleTimer()">&#9654; Timer starten</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     6 – Abstimmung
+══════════════════════════════ -->
+<div class="slide s-content">
+  <div class="heading" data-anim>
+    <span class="badge badge-orange">Abstimmung</span>
+    Wer nimmt was?
+  </div>
+  <div class="vote-grid">
+    <div class="v-card blue-c" data-anim>
+      <div class="v-title">Beide Boxen<br>(A + B)</div>
+      <div class="v-detail">Sicher 1.000 €<br><br>…egal was in Box B steht</div>
+    </div>
+    <div class="v-card dark-c" data-anim>
+      <div class="v-title">Nur Box B</div>
+      <div class="v-detail">Prädiktor liegt fast immer richtig<br>&rarr; 1.000.000 €<br><br>Risiko: 0 €</div>
+    </div>
+  </div>
+  <!--
+    MENTIMETER SETUP:
+    1. mentimeter.com → kostenlos anmelden
+    2. New Presentation → Multiple Choice
+       Option 1: "Beide Boxen (A+B)"   Option 2: "Nur Box B"
+    3. Present → Presenter-Link kopieren → in MENTI_PRESENTER_URL eintragen
+    4. Voting-Code (6 Ziffern) unten ersetzen
+  -->
+  <div class="menti-row" data-anim>
+    <div class="menti-code">
+      <span>menti.com &nbsp;&rarr;&nbsp; Code:</span>
+      1234 5678
+    </div>
+    <button class="menti-btn" onclick="openMentimeter()">Live-Ergebnisse öffnen &nearr;</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     7 – Argument Zwei-Boxer
+══════════════════════════════ -->
+<div class="slide s-content">
+  <div class="heading" data-anim>Das Argument: Beide Boxen nehmen</div>
+  <div class="callout green" data-anim>
+    <strong>Dominanzprinzip:</strong> Wenn eine Option in <em>jedem möglichen Fall</em> besser ist als die Alternative, sollte man sie wählen.
+  </div>
+  <ul class="bullets" style="margin-top:10px">
+    <li data-anim class="s-head">Box B ist bereits voll oder leer – zwei mögliche Fälle:</li>
+    <li data-anim class="sub ok">Fall 1 – Box B <strong>voll</strong>: &nbsp; beide nehmen &rarr; 1.001.000 € &nbsp;|&nbsp; nur B &rarr; 1.000.000 € &nbsp;&rarr;&nbsp; <strong>+1.000 € Vorteil</strong></li>
+    <li data-anim class="sub ok">Fall 2 – Box B <strong>leer</strong>: &nbsp; beide nehmen &rarr; 1.000 € &nbsp;|&nbsp; nur B &rarr; 0 € &nbsp;&rarr;&nbsp; <strong>+1.000 € Vorteil</strong></li>
+    <li data-anim class="hl" style="margin-top:8px">In <strong>beiden Fällen</strong> ist es besser, beide zu nehmen &rarr; also beide nehmen!</li>
+  </ul>
+  <div class="callout" style="margin-top:14px" data-anim>
+    „Die Vergangenheit lässt sich nicht ändern. Box B ist schon befüllt – also nehme ich lieber das Extra-Tausend mit."
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     8 – Argument Ein-Boxer
+══════════════════════════════ -->
+<div class="slide s-content">
+  <div class="heading" data-anim>Das Argument: Nur Box B nehmen</div>
+  <div class="callout green" data-anim>
+    <strong>Erwartungswert-Prinzip:</strong> Wähle die Option, die im Durchschnitt am meisten einbringt.
+  </div>
+  <div class="formula-box" data-anim>
+    Prädiktor ist zu 99 % richtig.<br>
+    E(beide nehmen) &nbsp;= 0,99 &times; 1.000 € &nbsp;+&nbsp; 0,01 &times; 1.001.000 € <span class="small">&asymp; 11.000 €</span><br>
+    E(nur Box B) &nbsp;&nbsp;&nbsp;= 0,99 &times; 1.000.000 € + 0,01 &times; 0 € <span class="big">&asymp; 990.000 €</span>
+  </div>
+  <ul class="bullets" style="margin-top:8px">
+    <li data-anim class="hl">Ein-Boxer gewinnen im Schnitt fast <strong>100× mehr</strong></li>
+    <li data-anim>Wer beide nimmt, <em>ist der Typ</em>, bei dem der Prädiktor Box B leer gelassen hat</li>
+  </ul>
+  <div class="callout" style="margin-top:12px" data-anim>
+    „Ich vertraue dem Prädiktor. Wenn ich beide nehme, hat er das schon gewusst – Box B ist leer. Also: nur Box B."
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     9 – Das Paradox
+══════════════════════════════ -->
+<div class="slide s-content">
+  <div class="heading" data-anim>Das Paradox</div>
+  <div class="stmt stmt-ok" data-anim>Das Dominanzprinzip ist logisch korrekt. &rarr; Beide Boxen nehmen.</div>
+  <div class="stmt stmt-ok" data-anim>Das Erwartungswert-Prinzip ist logisch korrekt. &rarr; Nur Box B nehmen.</div>
+  <div class="stmt stmt-bad" data-anim>Beide Prinzipien sind anerkannte Grundlagen rationaler Entscheidungen – und widersprechen sich hier.</div>
+  <div class="paradox-concl" data-anim>&rarr; Bis heute keine eindeutige Lösung. Philosophen sind gespalten.</div>
+  <div class="history" data-anim>
+    Erfunden 1960 von William Newcomb &nbsp;·&nbsp;
+    Veröffentlicht 1969 vom Philosophen Robert Nozick &nbsp;·&nbsp;
+    Umfrage unter Top-Philosophen: ~40 % zwei-boxen, ~40 % ein-boxen, ~20 % unentschieden
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     10 – Freier Wille
+══════════════════════════════ -->
+<div class="slide s-content">
+  <div class="heading" data-anim>Was hat das mit freiem Willen zu tun?</div>
+  <div class="three-col">
+    <div class="col-card" data-anim>
+      <div class="pill pill-blue" style="margin-bottom:8px">Libertarismus</div>
+      <div class="col-title">Echter freier Wille</div>
+      <div class="col-body">
+        Der Mensch ist der <strong>echte Ursprung</strong> seiner Entscheidungen.
+        Du hättest immer auch anders handeln können.
+        <br><br>
+        <em>Newcomb:</em> Der Prädiktor kann dich nie wirklich 100 % vorhersagen – du bist frei.
+      </div>
+    </div>
+    <div class="col-card" data-anim>
+      <div class="pill pill-dark">Harter Determinismus</div>
+      <div class="col-title">Kein freier Wille</div>
+      <div class="col-body">
+        Jede Entscheidung ist die <strong>unvermeidliche Folge</strong> vorheriger Ursachen.
+        Gehirn, Gene und Umwelt entscheiden für dich.
+        <br><br>
+        <em>Newcomb:</em> Der Prädiktor hat immer recht – du konntest gar nicht anders.
+      </div>
+    </div>
+    <div class="col-card" data-anim>
+      <div class="pill pill-green">Kompatibilismus</div>
+      <div class="col-title">Beides geht zusammen</div>
+      <div class="col-body">
+        Freiheit = nach den <strong>eigenen Wünschen</strong> handeln, ohne äußeren Zwang –
+        auch wenn diese Wünsche durch Ursachen entstanden sind.
+        <br><br>
+        <em>Newcomb:</em> Du entscheidest frei – aber deine Persönlichkeit macht dich vorhersagbar.
+      </div>
+    </div>
+  </div>
+  <div class="callout" style="margin-top:14px" data-anim>
+    <strong>Die Frage:</strong>
+    Wenn dich ein Prädiktor mit 99 % Genauigkeit vorhersagen kann – bist du dann wirklich frei?
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     11 – Abschlussfrage
+══════════════════════════════ -->
+<div class="slide s-end">
+  <div class="end-inner">
+    <div class="end-label" data-anim>Abschlussfrage</div>
+    <div class="end-question" data-anim>Gibt es freien<br>Willen <span>überhaupt</span>?</div>
+    <div class="end-sub" data-anim>
+      …oder war deine Antwort auf diese Frage<br>gerade schon vorherbestimmt?
+    </div>
+    <div class="end-options">
+      <div class="end-opt yes" data-anim>
+        <strong>Ja</strong>
+        Du bist mehr als deine Gene und Erlebnisse. Du kannst wirklich anders handeln.
+      </div>
+      <div class="end-opt no" data-anim>
+        <strong>Nein</strong>
+        Alles – auch diese Antwort – ist die Folge von Ursachen, die vor deiner Geburt begannen.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</div><!-- #deck -->
+
+<div id="blackout" onclick="hideBlackout()"><p>Klick zum Fortfahren</p></div>
+<div id="progress"></div>
+<div id="counter">1 / 11</div>
 
 <script>
-var D = [
-  { cards: [
-    { q:"Frage 1",
-      question:"Warum werden die V\u00f6gel erst eingesperrt und dann soll man von ihnen lernen?",
-      answer:"Das passt zu Rassismus, weil man Gruppen zuerst unterdr\u00fcckt (K\u00e4fig) und sie dann als \u201ebesonders\u201c oder \u201eexotisch\u201c darstellt, um sich selbst besser zu f\u00fchlen. Das zeigt, wie Unterdr\u00fcckung und Bewunderung gleichzeitig passieren k\u00f6nnen \u2013 und das ist im Grunde sehr egoistisch." },
-    { q:"Frage 2",
-      question:"Ist es ok zu sagen, man wei\u00df wie ein Vogel ist, nur weil man mit ihnen spielt?",
-      answer:"Oft denken Menschen, sie verstehen eine andere Kultur oder Gruppe vollst\u00e4ndig, obwohl sie deren echte Probleme nie wirklich kennengelernt haben. Das ist wie bei Rassismus: Man bildet sich Vorurteile, ohne jemals wirklich mit diesen Menschen zu tun gehabt zu haben." },
-    { q:"Frage 3",
-      question:"Warum ist es \u201everr\u00fcckt\u201c, dass Singen und Tanzen so viel Macht hat?",
-      answer:"Das erinnert an Vorurteile, bei denen man bestimmten Gruppen nur Talent f\u00fcr Musik oder Sport zuschreibt, statt sie als genauso klug oder f\u00e4hig anzusehen. Das sind keine Fakten \u2013 das sind Vorurteile, die Menschen auf bestimmte Eigenschaften reduzieren." }
-  ]},
-  { cards: [
-    { q:"Frage 1",
-      question:"Warum muss Mowgli extra \u201eMeisterworte\u201c lernen, um im Dschungel sicher zu sein?",
-      answer:"Das ist vergleichbar mit Rassismus, wenn unterdr\u00fcckte Gruppen sich anpassen und fremde Regeln lernen m\u00fcssen, nur damit sie nicht angegriffen oder verachtet werden." },
-    { q:"Frage 2",
-      question:"Ist es rassistisch, dass Baloo sagt, Mowgli ist kein \u201eBaumstumpf\u201c zum Krallensch\u00e4rfen?",
-      answer:"Hier wird Mowgli nur \u00fcber seinen K\u00f6rper definiert \u2013 fast wie ein Objekt oder ein Sklave. Er wird nicht als gleichwertiges Wesen behandelt, sondern nur nach seinem Nutzen bewertet." },
-    { q:"Frage 3",
-      question:"Warum sagt Baloo, dass die Sch\u00fcler ihm nie danken?",
-      answer:"Das ist auch Vorurteil, dass die \u201e\u00fcberlegene\u201c Gruppe glaubt, sie tue den anderen etwas Gutes \u2013 zum Beispiel durch Bildung. Dabei wirkt es dann so, als w\u00e4ren die anderen undankbar, obwohl das System von Anfang an ungerecht ist." },
-    { q:"Frage 4",
-      question:"Warum muss Mowgli den \u201eAkzent des B\u00e4ren\u201c nutzen, um dazuzugeh\u00f6ren?",
-      answer:"Das zeigt, dass man nur akzeptiert wird, wenn man die Identit\u00e4t der Mehrheit \u00fcbernimmt und die eigene Herkunft versteckt. Das ist \u00e4hnlich wie bei Sprache und Kultur: Alles, was fremd ist, wird abgelehnt und dass auch ohne direcktem Grund!" },
-    { q:"Frage 5",
-      question:"Warum ist Schutz im Dschungel von \u201eMeisterworten\u201c abh\u00e4ngig?",
-      answer:"Das System ist unfair. Wer die Regeln der Herrschenden nicht kennt, hat keinen Anspruch auf Schutz \u2013 das ist eine rassistische Strucktur, die Au\u00dfenseiter bewusst benachteiligt." }
-  ]}
-];
+const MENTI_PRESENTER_URL = 'https://www.mentimeter.com/app/presentation/DEIN-LINK-HIER/present';
 
-var vp     = document.getElementById('vp');
-var dotsEl = document.getElementById('dots');
-var tabs   = document.querySelectorAll('.tab');
+const slides = document.querySelectorAll('.slide');
+const TOTAL  = slides.length;
+let cur = 0, busy = false;
 
-var curT    = 0;
-var curC    = [0, 0];
-var busy    = false;
-var slides  = [];
+function go(n) {
+  if (busy) return;
+  const next = Math.max(0, Math.min(n, TOTAL - 1));
+  if (next === cur) return;
+  busy = true;
+  const forward = next > cur;
+  const prev = slides[cur], dest = slides[next];
 
-// Build slides
-for (var t = 0; t < D.length; t++) {
-  var ts = [];
-  for (var c = 0; c < D[t].cards.length; c++) {
-    var card = D[t].cards[c];
-    var el = document.createElement('div');
-    el.className = 'slide below instant';
-    el.style.display = 'none';
-    el.innerHTML =
-      '<div class="panel" data-num="0' + (c+1) + '">' +
-        '<div class="q-tag">' + card.q + '</div>' +
-        '<div class="q-text">' + card.question + '</div>' +
-        '<div class="divider"></div>' +
-        '<div class="a-tag">Begr\u00fcndung</div>' +
-        '<div class="a-text">' + card.answer + '</div>' +
-      '</div>';
-    vp.appendChild(el);
-    ts.push(el);
-  }
-  slides.push(ts);
+  dest.style.transition = 'none';
+  dest.classList.remove('active','exit-left','exit-right','from-left');
+  if (!forward) dest.classList.add('from-left');
+  dest.getBoundingClientRect();
+  dest.style.transition = '';
+
+  prev.classList.add(forward ? 'exit-left' : 'exit-right');
+  dest.classList.add('active');
+  dest.classList.remove('from-left');
+
+  cur = next;
+  updateUI();
+  animateContent(dest);
+  setTimeout(() => { prev.classList.remove('active','exit-left','exit-right'); busy = false; }, 440);
 }
 
-function pc(i, a) { return i < a ? 'above' : i === a ? 'active' : 'below'; }
-
-function updateDots(t) {
-  var n = D[t].cards.length, a = curC[t];
-  dotsEl.innerHTML = '';
-  for (var i = 0; i < n; i++) {
-    var d = document.createElement('div');
-    d.className = 'dot' + (i === a ? ' on' : '');
-    dotsEl.appendChild(d);
-  }
-}
-
-function showText(t, anim) {
-  var cs = slides[t], a = curC[t];
-  for (var i = 0; i < cs.length; i++) {
-    cs[i].style.display = '';
-    cs[i].className = 'slide below instant';
-  }
-  if (!anim) {
-    // force reflow then set instant positions
-    cs[0] && cs[0].offsetHeight;
-    for (var i = 0; i < cs.length; i++) cs[i].className = 'slide ' + pc(i, a) + ' instant';
-    updateDots(t);
-    return;
-  }
-  // reflow, then animate active card in from below; others snap to position
-  cs[0] && cs[0].offsetHeight;
-  requestAnimationFrame(function() {
-    requestAnimationFrame(function() {
-      for (var i = 0; i < cs.length; i++) {
-        if (i === a) cs[i].className = 'slide active'; // animate from below
-        else         cs[i].className = 'slide ' + pc(i, a) + ' instant';
-      }
-      updateDots(t);
-    });
+function animateContent(slide) {
+  slide.querySelectorAll('[data-anim]').forEach((el, i) => {
+    el.classList.remove('in');
+    setTimeout(() => el.classList.add('in'), 70 + i * 95);
   });
 }
+animateContent(slides[0]);
 
-function hideText(t) {
-  var cs = slides[t];
-  for (var i = 0; i < cs.length; i++) {
-    cs[i].style.display = 'none';
-    cs[i].className = 'slide below instant';
+function updateUI() {
+  document.getElementById('progress').style.width = ((cur + 1) / TOTAL * 100) + '%';
+  document.getElementById('counter').textContent  = (cur + 1) + ' / ' + TOTAL;
+  const dark = slides[cur].classList.contains('s-title') ||
+               slides[cur].classList.contains('s-video')  ||
+               slides[cur].classList.contains('s-end');
+  document.getElementById('counter').style.color = dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.27)';
+}
+updateUI();
+
+let timerSecs = 60, timerRunning = false, timerIv = null;
+function toggleTimer() {
+  const num = document.getElementById('timer-num');
+  const btn = document.getElementById('timer-btn');
+  if (!num) return;
+  if (timerRunning) {
+    clearInterval(timerIv); timerRunning = false;
+    timerSecs = 60; num.textContent = '60'; num.className = ''; btn.textContent = '▶ Timer starten';
+  } else {
+    timerRunning = true; btn.textContent = '⏹ Stopp';
+    timerIv = setInterval(() => {
+      timerSecs--;
+      num.textContent = timerSecs;
+      if (timerSecs <= 10) num.classList.add('urgent');
+      if (timerSecs <= 0) {
+        clearInterval(timerIv); timerRunning = false;
+        num.textContent = 'Zeit!'; num.className = 'done';
+        btn.textContent = '↺ Neu'; timerSecs = 60;
+      }
+    }, 1000);
   }
 }
 
-function switchT(t) {
-  if (t === curT) return;
-  hideText(curT);
-  curT = t;
-  for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle('active', i === t);
-  showText(t, true);
+function openMentimeter() {
+  window.open(MENTI_PRESENTER_URL, '_blank');
+  document.getElementById('blackout').classList.add('active');
+}
+function hideBlackout() {
+  document.getElementById('blackout').classList.remove('active');
 }
 
-function go(dir) {
-  if (busy) return;
-  var n = D[curT].cards.length, next = curC[curT] + dir;
-  if (next < 0 || next >= n) return;
-  busy = true;
-  curC[curT] = next;
-  var cs = slides[curT];
-  for (var i = 0; i < cs.length; i++) cs[i].className = 'slide ' + pc(i, next);
-  updateDots(curT);
-  setTimeout(function() { busy = false; }, 580);
-}
-
-// Init
-showText(0, false);
-
-// Touch
-var ty0 = 0, tx0 = 0;
-document.addEventListener('touchstart', function(e) {
-  ty0 = e.touches[0].clientY; tx0 = e.touches[0].clientX;
-}, { passive: true });
-document.addEventListener('touchend', function(e) {
-  var dy = ty0 - e.changedTouches[0].clientY;
-  var dx = Math.abs(tx0 - e.changedTouches[0].clientX);
-  if (Math.abs(dy) > 48 && Math.abs(dy) > dx) go(dy > 0 ? 1 : -1);
-}, { passive: true });
-
-// Wheel
-var wLock = false;
-document.addEventListener('wheel', function(e) {
-  e.preventDefault();
-  if (wLock || Math.abs(e.deltaY) < 12) return;
-  wLock = true;
-  go(e.deltaY > 0 ? 1 : -1);
-  setTimeout(function() { wLock = false; }, 650);
-}, { passive: false });
-
-// Keys
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') go(1);
-  if (e.key === 'ArrowUp'   || e.key === 'ArrowLeft')  go(-1);
-  if (e.key === '1') switchT(0);
-  if (e.key === '2') switchT(1);
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' ') { e.preventDefault(); go(cur+1); }
+  else if (e.key==='ArrowLeft'||e.key==='ArrowUp') { e.preventDefault(); go(cur-1); }
+  else if (e.key==='f'||e.key==='F') {
+    document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+  }
+});
+document.addEventListener('click', e => {
+  if (e.target.closest('#timer-btn,.menti-btn,#blackout')) return;
+  go(e.clientX / window.innerWidth > 0.5 ? cur+1 : cur-1);
 });
 </script>
 </body>
